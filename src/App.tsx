@@ -171,11 +171,17 @@ export const App = () => {
   const [collapsedItems, setCollapsedItem] = useState<string[]>([]);
 
   useEffect(() => {
+    if (view === 'buy') {
+      window.gtag('event', '7554_cashback_buy_impression', { var: 'var3' });
+    }
+  }, [view]);
+
+  useEffect(() => {
     if (!LS.getItem(LSKeys.UserId, null)) {
       LS.setItem(LSKeys.UserId, Date.now());
     }
 
-    window.gtag('event', '7554_selection_impression', { var: 'var3' });
+    window.gtag('event', '7554_start_landing_impression', { var: 'var3' });
   }, []);
 
   useEffect(() => {
@@ -218,6 +224,8 @@ export const App = () => {
   };
 
   const submit = () => {
+    window.gtag('event', '7554_cashback_buy_click_step2', { var: 'var3', size: sum.toString() });
+
     window.location.replace(LINK);
   };
 
@@ -414,7 +422,7 @@ export const App = () => {
           <div key={index}>
             <div
               onClick={() => {
-                window.gtag('event', '7554_bundle_faq', { faq: String(index + 1), var: 'var3' });
+                window.gtag('event', '7554_faq_click', { question: faq.question, var: 'var3' });
 
                 setCollapsedItem(items =>
                   items.includes(String(index + 1))
@@ -453,6 +461,8 @@ export const App = () => {
           view="primary"
           block
           onClick={() => {
+            window.gtag('event', '7554_start_landing_buy_click', { var: 'var3' });
+
             setView('buy');
           }}
         >
