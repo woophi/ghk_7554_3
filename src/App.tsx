@@ -1,19 +1,25 @@
 import { AmountInput } from '@alfalab/core-components/amount-input/cssm';
-import { BottomSheet } from '@alfalab/core-components/bottom-sheet/cssm';
 import { Button } from '@alfalab/core-components/button/cssm';
+import { Collapse } from '@alfalab/core-components/collapse/cssm';
+import { Gap } from '@alfalab/core-components/gap/cssm';
 import { PureCell } from '@alfalab/core-components/pure-cell/cssm';
+import { Status } from '@alfalab/core-components/status/cssm';
+import { Steps } from '@alfalab/core-components/steps/cssm';
 import { Typography } from '@alfalab/core-components/typography/cssm';
 import { BankMIcon } from '@alfalab/icons-glyph/BankMIcon';
+import { ChevronDownMIcon } from '@alfalab/icons-glyph/ChevronDownMIcon';
 import { ChevronLeftMIcon } from '@alfalab/icons-glyph/ChevronLeftMIcon';
+import { ChevronUpMIcon } from '@alfalab/icons-glyph/ChevronUpMIcon';
 import { FlameMIcon } from '@alfalab/icons-glyph/FlameMIcon';
-import { InformationCircleLineMIcon } from '@alfalab/icons-glyph/InformationCircleLineMIcon';
 import { StarMIcon } from '@alfalab/icons-glyph/StarMIcon';
 import { UsdMIcon } from '@alfalab/icons-glyph/UsdMIcon';
 import { WorldMIcon } from '@alfalab/icons-glyph/WorldMIcon';
 import { type ComponentType, useEffect, useState } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { AnswerScreen } from './answer/AnswerScreen';
 import { answerSt } from './answer/style.css';
+import hbImg from './assets/hb.png';
+import pack1Img from './assets/pack1.png';
+import pack2Img from './assets/pack2.png';
+import pack3Img from './assets/pack3.png';
 import rubIcon from './assets/rub.png';
 import { QuestionGauge } from './components/QuestionGauge';
 import { useStocksData } from './hooks/useStocksData';
@@ -21,6 +27,7 @@ import { LS, LSKeys } from './ls';
 import { appSt } from './style.css';
 import type { QuestionItem } from './types';
 import { getAnswerTone } from './utils/tone';
+
 const CATEGORY_ALL = 'Все';
 const LINK =
   'alfabank://sdui_screen?screenName=InvestmentLongread&fromCurrent=true&shouldUseBottomSafeArea=true&endpoint=v1/invest-main-screen-view/investment-longread/98955%3flocation=AM%26campaignCode=GH';
@@ -31,29 +38,44 @@ const categoryIcons = {
   Культура: BankMIcon,
 } as const;
 
+const hiw = [
+  {
+    title: 'Купи кэшбэк',
+    desc: 'Выбери сумму и оплати картой. Баллы — мгновенно на счёт.',
+  },
+  {
+    title: 'Выбери событие',
+    desc: 'Финансы, политика, крипто. Поставь на исход.',
+  },
+  {
+    title: 'Забери выигрыш',
+    desc: 'Угадал — баллы умножились. Трать или ставь снова.',
+  },
+];
+
+const faqs = [
+  {
+    question: 'Это реальные деньги?',
+    answers: [
+      'Баллы — это не рубли, но их можно вывести. Курс фиксированный: 1 балл = 0,8 ₽. Минимальная сумма вывода — от 300 баллов.',
+    ],
+  },
+  {
+    question: 'Когда поступят баллы?',
+    answers: ['Сразу после оплаты — ещё до того, как закроешь экран. Никаких задержек и подтверждений.'],
+  },
+  {
+    question: 'Это законно?',
+    answers: [
+      'Да. Баллы — это бонусная программа, а не ставки на деньги. Юридически это работает как кэшбэк: ты покупаешь баллы и тратишь их внутри сервиса. Никаких лицензий на азартные игры не требуется',
+    ],
+  },
+];
+
 const getMultiplierText = (value: number) => `x${value.toFixed(2)}`;
 
 const getAnswerText = (answer: 'yes' | 'no') => {
   return answer === 'yes' ? 'Да' : 'Нет';
-};
-
-type CategoryPillProps = {
-  category: string;
-  isActive: boolean;
-  onClick: () => void;
-};
-
-const CategoryPill = ({ category, isActive, onClick }: CategoryPillProps) => {
-  const Icon = categoryIcons[category as keyof typeof categoryIcons] ?? StarMIcon;
-
-  return (
-    <button className={isActive ? appSt.filterButtonActive : appSt.filterButton} type="button" onClick={onClick}>
-      <Icon className={isActive ? appSt.filterIconActive : appSt.filterIcon} />
-      <Typography.Text tag="span" view="primary-small" color={isActive ? 'primary-inverted' : 'secondary'}>
-        {category}
-      </Typography.Text>
-    </button>
-  );
 };
 
 type AnswerButtonProps = {
@@ -142,16 +164,11 @@ const QuestionCard = ({
 
 export const App = () => {
   const { questions } = useStocksData();
-  const [openBs, setOpenBs] = useState(false);
-  const [view, setView] = useState<'feed' | 'answer' | 'buy' | 'buy-fast'>('feed');
-  const [activeCategory, setActiveCategory] = useState(CATEGORY_ALL);
+  const [view, setView] = useState<'feed' | 'buy'>('feed');
   const [GaugeChartComponent, setGaugeChartComponent] = useState<ComponentType<Record<string, unknown>> | null>(null);
-  const [answerData, setAnswerData] = useState<{
-    question: QuestionItem;
-    answer: 'yes' | 'no';
-  } | null>(null);
   const [sum, setSum] = useState(100);
   const [error, setError] = useState('');
+  const [collapsedItems, setCollapsedItem] = useState<string[]>([]);
 
   useEffect(() => {
     if (!LS.getItem(LSKeys.UserId, null)) {
@@ -204,11 +221,9 @@ export const App = () => {
     window.location.replace(LINK);
   };
 
-  const categories = [CATEGORY_ALL, ...new Set(questions.map(({ category }) => category))];
-  const filteredQuestions =
-    activeCategory === CATEGORY_ALL ? questions : questions.filter(({ category }) => category === activeCategory);
+  const filteredQuestions = questions.filter(v => v.category === 'Финансы').slice(0, 3);
 
-  if (view === 'buy-fast' || view === 'buy') {
+  if (view === 'buy') {
     return (
       <div>
         <div className={appSt.container}>
@@ -259,11 +274,7 @@ export const App = () => {
             type="button"
             className={answerSt.backButton}
             onClick={() => {
-              if (view === 'buy-fast') {
-                setView('feed');
-              } else {
-                setView('answer');
-              }
+              setView('feed');
             }}
           >
             <ChevronLeftMIcon className={answerSt.backIcon} />
@@ -289,136 +300,165 @@ export const App = () => {
     );
   }
 
-  if (answerData) {
-    return (
-      <>
-        <AnswerScreen
-          question={answerData.question}
-          answer={answerData.answer}
-          GaugeChartComponent={GaugeChartComponent}
-          onBack={() => setAnswerData(null)}
-          setAnswerData={setAnswerData}
-          onSubmit={() => {
-            setOpenBs(true);
-          }}
-        />
-        <BottomSheet
-          open={openBs}
-          onClose={() => {
-            setOpenBs(false);
-          }}
-          contentClassName={appSt.btmContent}
-          actionButton={
-            <Button
-              view="secondary"
-              block
-              onClick={() => {
-                setOpenBs(false);
-                setView('buy');
-              }}
-            >
-              Купить кешбэк
-            </Button>
-          }
-        >
-          <div className={appSt.container}>
-            <Typography.Title tag="h3" view="small" weight="semibold" font="system">
-              Недостаточно кешбэка
-            </Typography.Title>
-            <Typography.Text view="primary-medium">
-              Для ставки 100 кешбэка не хватает. Докупите кешбэк, чтобы продолжить.
-            </Typography.Text>
-          </div>
-        </BottomSheet>
-      </>
-    );
-  }
-
   return (
     <div className={appSt.page}>
       <div className={appSt.hero}>
         <Typography.Text tag="div" className={appSt.heroTitle}>
-          Используй свой кешбэк
+          Ставь кэшбэк на реальные события
         </Typography.Text>
-        <Typography.Text tag="p" view="primary-medium" defaultMargins={false} className={appSt.heroText}>
-          Ставь кешбэк на реальные события. Угадал — получаешь больше баллов.
+        <Typography.Text tag="p" view="primary-small" color="secondary" defaultMargins={false}>
+          Нет кэшбэка? Купи прямо сейчас — и угадывай события. Угадал — получаешь больше баллов.
         </Typography.Text>
-
-        <PureCell className={appSt.box}>
-          <PureCell.Graphics verticalAlign="top">
-            <InformationCircleLineMIcon color="#BD6A0F" />
-          </PureCell.Graphics>
-          <PureCell.Content>
-            <PureCell.Main>
-              <Typography.Title
-                tag="h5"
-                view="xsmall"
-                weight="medium"
-                font="system"
-                style={{
-                  color: '#BD6A0F',
-                }}
-              >
-                Недостаточно кешбэка
-              </Typography.Title>
-              <Typography.Text
-                style={{ color: '#EA8313', margin: '8px 0 12px' }}
-                view="secondary-large"
-                tag="p"
-                defaultMargins={false}
-              >
-                Для ставки 100 кешбэка не хватает. Докупите кешбэк, чтобы продолжить.
-              </Typography.Text>
-              <Button
-                size={32}
-                block
-                style={{ backgroundColor: '#BD6A0F', color: '#FFFFFF' }}
-                onClick={() => {
-                  setView('buy-fast');
-                }}
-              >
-                Купить кешбэк
-              </Button>
-            </PureCell.Main>
-          </PureCell.Content>
-        </PureCell>
+        <img src={hbImg} alt="Кэшбэк" height={219} width="100%" style={{ objectFit: 'contain' }} />
       </div>
 
       <section className={appSt.feedSection}>
-        <div className={appSt.filtersWrap}>
-          <Swiper slidesPerView="auto" spaceBetween={8}>
-            {categories.map(category => (
-              <SwiperSlide key={category} className={appSt.filterSlide}>
-                <CategoryPill
-                  category={category}
-                  isActive={category === activeCategory}
-                  onClick={() => setActiveCategory(category)}
-                />
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
-
         <div className={appSt.cardsList}>
+          <Typography.Title tag="h2" view="small" weight="semibold" font="system">
+            Активные события
+          </Typography.Title>
           {filteredQuestions.map((question, index) => (
             <QuestionCard
               key={`${question.category}-${question.question}`}
               question={question}
               index={index}
               GaugeChartComponent={GaugeChartComponent}
-              setAnswerData={setAnswerData}
+              setAnswerData={() => {}}
             />
           ))}
-
-          {filteredQuestions.length === 0 ? (
-            <div className={appSt.emptyState}>
-              <Typography.Text tag="p" view="primary-medium" defaultMargins={false} color="secondary">
-                Загружаем вопросы...
-              </Typography.Text>
-            </div>
-          ) : null}
         </div>
       </section>
+
+      <div className={appSt.container}>
+        <Typography.Title tag="h2" view="small" weight="semibold" font="system">
+          Доступные пакеты
+        </Typography.Title>
+        <PureCell className={appSt.box}>
+          <PureCell.Graphics verticalAlign="top">
+            <img src={pack1Img} alt="pack1" width={32} height={40} />
+          </PureCell.Graphics>
+          <PureCell.Content>
+            <PureCell.Main>
+              <Typography.Text view="primary-small">Старт</Typography.Text>
+              <Typography.Title tag="h3" view="medium" weight="medium" font="system">
+                500 ₽
+              </Typography.Title>
+              <Typography.Text view="primary-small" color="positive">
+                500 баллов
+              </Typography.Text>
+            </PureCell.Main>
+          </PureCell.Content>
+        </PureCell>
+        <PureCell className={appSt.box}>
+          <PureCell.Graphics verticalAlign="top">
+            <img src={pack2Img} alt="pack2" width={32} height={40} />
+          </PureCell.Graphics>
+          <PureCell.Content>
+            <PureCell.Main>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography.Text view="primary-small">Базовый</Typography.Text>
+
+                <Status view="contrast" color="green" size={20} shape="rounded">
+                  ⚡ Популярный
+                </Status>
+              </div>
+
+              <Typography.Title tag="h3" view="medium" weight="medium" font="system">
+                2 000 ₽
+              </Typography.Title>
+              <Typography.Text view="primary-small" color="positive">
+                2 200 баллов (+200 бонус)
+              </Typography.Text>
+            </PureCell.Main>
+          </PureCell.Content>
+        </PureCell>
+        <PureCell className={appSt.box}>
+          <PureCell.Graphics verticalAlign="top">
+            <img src={pack3Img} alt="pack3" width={32} height={40} />
+          </PureCell.Graphics>
+          <PureCell.Content>
+            <PureCell.Main>
+              <Typography.Text view="primary-small">Про</Typography.Text>
+              <Typography.Title tag="h3" view="medium" weight="medium" font="system">
+                5 000 ₽
+              </Typography.Title>
+              <Typography.Text view="primary-small" color="positive">
+                5 750 баллов (+750 бонус)
+              </Typography.Text>
+            </PureCell.Main>
+          </PureCell.Content>
+        </PureCell>
+
+        <Typography.TitleResponsive style={{ marginTop: '1rem' }} tag="h2" view="small" font="system" weight="medium">
+          Как это работает
+        </Typography.TitleResponsive>
+
+        <Steps isVerticalAlign={true} interactive={false} className={appSt.stepStyle}>
+          {hiw.map(item => (
+            <span key={item.title}>
+              <Typography.Text tag="p" defaultMargins={false} view="component-primary">
+                {item.title}
+              </Typography.Text>
+              <Typography.Text view="primary-small" color="secondary">
+                {item.desc}
+              </Typography.Text>
+            </span>
+          ))}
+        </Steps>
+
+        <Typography.TitleResponsive style={{ marginTop: '1rem' }} tag="h2" view="small" font="system" weight="medium">
+          Дополнительные вопросы
+        </Typography.TitleResponsive>
+
+        {faqs.map((faq, index) => (
+          <div key={index}>
+            <div
+              onClick={() => {
+                window.gtag('event', '7554_bundle_faq', { faq: String(index + 1), var: 'var3' });
+
+                setCollapsedItem(items =>
+                  items.includes(String(index + 1))
+                    ? items.filter(item => item !== String(index + 1))
+                    : [...items, String(index + 1)],
+                );
+              }}
+              className={appSt.rowSb}
+            >
+              <Typography.Text view="primary-medium" weight="medium">
+                {faq.question}
+              </Typography.Text>
+              {collapsedItems.includes(String(index + 1)) ? (
+                <div style={{ flexShrink: 0 }}>
+                  <ChevronUpMIcon />
+                </div>
+              ) : (
+                <div style={{ flexShrink: 0 }}>
+                  <ChevronDownMIcon />
+                </div>
+              )}
+            </div>
+            <Collapse expanded={collapsedItems.includes(String(index + 1))}>
+              {faq.answers.map((answerPart, answerIndex) => (
+                <Typography.Text key={answerIndex} tag="p" defaultMargins={false} view="primary-medium">
+                  {answerPart}
+                </Typography.Text>
+              ))}
+            </Collapse>
+          </div>
+        ))}
+      </div>
+      <Gap size={96} />
+      <div className={appSt.bottomBtn}>
+        <Button
+          view="primary"
+          block
+          onClick={() => {
+            setView('buy');
+          }}
+        >
+          Купить
+        </Button>
+      </div>
     </div>
   );
 };

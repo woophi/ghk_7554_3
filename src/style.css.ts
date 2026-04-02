@@ -19,10 +19,9 @@ const container = style({
 });
 
 const box = style({
-  padding: '1rem',
-  borderRadius: '1rem',
-  backgroundColor: '#FFF6EB',
-  border: '1px solid #EA8313',
+  padding: '20px',
+  borderRadius: '18px',
+  backgroundColor: '#F6F6FD',
 });
 
 const row = style({
@@ -44,21 +43,15 @@ const hero = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '6px',
-  padding: '24px 20px 20px',
+  padding: '24px 1rem ',
+  textAlign: 'center',
+  alignItems: 'center',
 });
 
 const heroTitle = style({
-  maxWidth: '290px',
-  fontSize: '34px',
-  lineHeight: '40px',
+  fontSize: '30px',
+  lineHeight: '36px',
   fontWeight: 600,
-  letterSpacing: '0.37px',
-  color: '#0C0C0F',
-});
-
-const heroText = style({
-  maxWidth: '320px',
-  color: 'rgba(3, 3, 6, 0.88)',
 });
 
 const feedSection = style({
@@ -69,7 +62,6 @@ const feedSection = style({
   borderTopLeftRadius: '20px',
   borderTopRightRadius: '20px',
   backgroundColor: '#F6F6FD',
-  minHeight: 'calc(100vh - 152px)',
 });
 
 const filtersWrap = style({
@@ -299,6 +291,19 @@ const btmContent = style({
   padding: 0,
 });
 
+const stepStyle = style({});
+globalStyle(`${stepStyle} > div > div > div[class^="_option_"]`, {
+  backgroundColor: '#030306E0',
+  color: 'var(--color-light-text-primary-inverted)',
+});
+
+const rowSb = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: '8px',
+});
+
 export const appSt = {
   bottomBtn,
   container,
@@ -308,7 +313,6 @@ export const appSt = {
   page,
   hero,
   heroTitle,
-  heroText,
   feedSection,
   filtersWrap,
   filterSlide,
@@ -338,4 +342,6 @@ export const appSt = {
   emptyState,
   bannerAccount,
   btmContent,
+  stepStyle,
+  rowSb,
 };
